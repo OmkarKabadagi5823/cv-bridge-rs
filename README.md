@@ -43,11 +43,11 @@ use rosrust::sensor_msgs::Image;
 use image::DynamicImage;
 
 fn main() {
-    # Convert from ROS image message to 
+    // Convert from ROS image message to 
     let ros_image = Image::default();
     let cv_image = CvImage::from_imgmsg(ros_image);
 
-    # Using the underlying DynamicImage type
+    // Using the underlying DynamicImage type
     let image = cv_image.as_image(); // Returns a immutable reference to the underlying DynamicImage
     let image = cv_image.as_mut_image(); // Returns a mutable reference to the underlying DynamicImage
     
