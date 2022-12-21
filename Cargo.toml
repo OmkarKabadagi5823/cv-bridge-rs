@@ -6,6 +6,8 @@ authors = ["Omkar Kabadagi <kabadagiomkar@gmail.com>"]
 description = "Rust implemenation of cv_bridge that converts between ROS image messages and OpenCV images"
 readme = "README.md"
 license = "MIT"
+documentation = "https://docs.rs/cv-bridge"
+repository = "https://github.com/OmkarKabadagi5823/cv-bridge-rs.git"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
