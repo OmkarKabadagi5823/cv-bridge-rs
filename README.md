@@ -25,12 +25,12 @@ use rosrust::sensor_msgs::Image;
 use opencv::prelude::*;
 
 fn main() {
-    # Convert from ROS image message to OpenCV image
+    // Convert from ROS image message to OpenCV image
     let ros_image = Image::default();
     let cv_image = CvImage::from_imgmsg(ros_image);
     let mat = cv_image.as_cvmat("rgb8".to_string());
    
-    # Convert from OpenCV image to ROS image message
+    // Convert from OpenCV image to ROS image message
     let cv_image = CvImage::from_cvmat(mat);
     let ros_image = cv_image.into_imgmsg();
 }
@@ -48,8 +48,8 @@ fn main() {
     let cv_image = CvImage::from_imgmsg(ros_image);
 
     # Using the underlying DynamicImage type
-    let image = cv_image.as_image(); # Returns a immutable reference to the underlying DynamicImage
-    let image = cv_image.as_mut_image(); # Returns a mutable reference to the underlying DynamicImage
+    let image = cv_image.as_image(); // Returns a immutable reference to the underlying DynamicImage
+    let image = cv_image.as_mut_image(); // Returns a mutable reference to the underlying DynamicImage
     
 }
 ```
@@ -60,8 +60,8 @@ use cv_bridge::CvImage;
 use std::vec;
 
 fn main() {
-    let bytes:Vec<u8> = vec![0, 0, 0, 255, 255, 255, 0, 0, 0, 255, 255, 255, 0, 0, 0, 255, 255, 255, 0, 0, 0, 255, 255, 255, 0, 0, 0]; # 3x3 image with 3 channels
-    let cv_image = CvImage::from_vec(3, 3, "rgb8".to_string(), bytes); # width, height, encoding, bytes
+    let bytes:Vec<u8> = vec![0, 0, 0, 255, 255, 255, 0, 0, 0, 255, 255, 255, 0, 0, 0, 255, 255, 255, 0, 0, 0, 255, 255, 255, 0, 0, 0]; // 3x3 image with 3 channels
+    let cv_image = CvImage::from_vec(3, 3, "rgb8".to_string(), bytes); // width, height, encoding, bytes
 }
 ```
 
