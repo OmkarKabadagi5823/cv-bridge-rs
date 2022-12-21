@@ -1,0 +1,16 @@
+[package]
+name = "cv-bridge"
+version = "0.2.0"
+edition = "2021"
+authors = ["Omkar Kabadagi <kabadagiomkar@gmail.com>"]
+description = "Rust implemenation of cv_bridge that converts between ROS image messages and OpenCV images"
+readme = "README.md"
+license = "MIT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+byteorder = "1.4.3"
+image = "0.24.5"
+opencv = "0.74.2"
+rosrust_msg = "0.1.6"
