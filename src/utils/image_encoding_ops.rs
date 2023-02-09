@@ -3,7 +3,7 @@ use byteorder::{
     LittleEndian,
     BigEndian,
     ReadBytesExt,
-    WriteBytesExt,
+    WriteBytesExt
 };
 
 pub fn from_u8_to_u16(data: &[u8], big_endian: bool) -> Vec<u16> {
@@ -37,4 +37,26 @@ pub fn from_u16_to_u8(data: &[u16], big_endian: bool) -> Vec<u8> {
     }
 
     data8
+}
+
+pub fn from_be_to_le(be: &[u8]) -> Vec<u8> {
+    let mut le = Vec::with_capacity(be.len());
+    let mut cursor = Cursor::new(be);
+
+    while let Ok(value) = cursor.read_u16::<BigEndian>() {
+        le.write_u16::<LittleEndian>(value).unwrap();
+    }
+
+    le
+}
+
+pub fn from_le_to_be(le: &[u8]) -> Vec<u8> {
+    let mut be = Vec::with_capacity(le.len());
+    let mut cursor = Cursor::new(le);
+
+    while let Ok(value) = cursor.read_u16::<LittleEndian>() {
+        be.write_u16::<BigEndian>(value).unwrap();
+    }
+
+    be
 }

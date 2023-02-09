@@ -6,176 +6,122 @@ use rosrust_msg::{
     std_msgs::Header,
     sensor_msgs::Image,
 };
-use image::{DynamicImage, ImageBuffer, ExtendedColorType, GenericImageView};
 use opencv::prelude::*;
-
-#[derive(Debug)]
-enum BufferMutPtr {
-    Mut8(*mut u8),
-    Mut16(*mut u16),
-}
+use std::error;
 
 #[derive(Debug)]
 pub struct CvImage {
     header: Header,
-    image: DynamicImage,
+    height: usize,
+    width: usize,
+    encoding: String,
+    data: Vec<u8>,
 }
 
 impl CvImage {
     pub fn from_imgmsg(image: Image) -> CvImage {
+        
         CvImage {
             header: image.header,
-            image: CvImage::from_vec(image.width, image.height, image.encoding, image.data).image,
+            height: image.height as usize,
+            width: image.width as usize,
+            encoding: image.encoding,
+            data: if image.is_bigendian == 0 {
+                image.data
+            } else {
+                image_encoding_ops::from_be_to_le(&image.data)
+            },
         }
     }
 
-    pub fn from_cvmat(mat: Mat) -> CvImage {
+    pub fn from_vec(height: usize, width: usize, encoding: &str, image: Vec<u8>) -> CvImage {
+        CvImage {
+            header: Header::default(),
+            height: height,
+            width: width,
+            encoding: encoding.to_string(),
+            data: image,
+        }
+    }
+
+    pub fn from_cvmat(mat: Mat, encoding: &str) -> CvImage {
         let (width, height) = (mat.cols(), mat.rows());
-        let encoding = image_encodings::from_cvtype_to_str(mat.typ());
         let data = match mat.data_bytes() {
-            Ok(data) => data.to_vec(),
-            Err(_) => panic!("Could not get data from Mat"),
+            Ok(data) => data,
+            Err(_) => panic!("Failed to get data bytes from Mat")
         };
+
+        CvImage {
+            header: Header::default(),
+            height: height as usize,
+            width: width as usize,
+            encoding: encoding.to_string(),
+            data: data.to_vec(),
+        }
+    }
+
+    pub fn into_imgmsg(self, is_bigendian: u8) -> Image {
+        let step = self.width as u32 * image_encodings::get_num_channels(&self.encoding) as u32;
         
-        CvImage { 
-            header: Header::default(), 
-            image: CvImage::from_vec(width as u32, height as u32, encoding, data).image
-        }
-    }
-
-    pub fn from_vec(width: u32, height: u32, encoding: String, data: Vec<u8>) -> CvImage {
-        match image_encodings::from_str_to_color(&encoding) {
-            ExtendedColorType::L8 => {
-                let img = ImageBuffer::from_vec(width, height, data).unwrap();
-                CvImage {
-                    header: Header::default(),
-                    image: DynamicImage::ImageLuma8(img),
-                }
-            }
-            ExtendedColorType::Rgb8 => {
-                let img = ImageBuffer::from_vec(width, height, data).unwrap();
-                CvImage {
-                    header: Header::default(),
-                    image: DynamicImage::ImageRgb8(img),
-                }
-            }
-            ExtendedColorType::Rgba8 => {
-                let img = ImageBuffer::from_vec(width, height, data).unwrap();
-                CvImage {
-                    header: Header::default(),
-                    image: DynamicImage::ImageRgba8(img),
-                }
-            }
-            ExtendedColorType::Bgr8 => {
-                let img = ImageBuffer::from_vec(width, height, data).unwrap();
-                CvImage {
-                    header: Header::default(),
-                    image: DynamicImage::ImageRgb8(img),
-                }
-            }
-            ExtendedColorType::Bgra8 => {
-                let img = ImageBuffer::from_vec(width, height, data).unwrap();
-                CvImage {
-                    header: Header::default(),
-                    image: DynamicImage::ImageRgba8(img),
-                }
-            }
-            ExtendedColorType::L16 => {
-                let img = ImageBuffer::from_vec(width, height, image_encoding_ops::from_u8_to_u16(&data, false)).unwrap();
-                CvImage {
-                    header: Header::default(),
-                    image: DynamicImage::ImageLuma16(img),
-                }
-            }
-            ExtendedColorType::Rgb16 => {
-                let img = ImageBuffer::from_vec(width, height, image_encoding_ops::from_u8_to_u16(&data, false)).unwrap();
-                CvImage {
-                    header: Header::default(),
-                    image: DynamicImage::ImageRgb16(img),
-                }
-            }
-            ExtendedColorType::Rgba16 => {
-                let img = ImageBuffer::from_vec(width, height, image_encoding_ops::from_u8_to_u16(&data, false)).unwrap();
-                CvImage {
-                    header: Header::default(),
-                    image: DynamicImage::ImageRgba16(img),
-                }
-            }
-            _ => {
-                panic!("Unsupported encoding");
-            }
-        }
-    }
-
-    pub fn as_cvmat(&mut self, desired_encoding: String) -> Mat {
-        let image_buffer_ptr = match desired_encoding.as_str() {
-            "mono8" => BufferMutPtr::Mut8(self.image.as_mut_luma8().unwrap().as_mut_ptr()),
-            "rgb8" => BufferMutPtr::Mut8(self.image.as_mut_rgb8().unwrap().as_mut_ptr()),
-            "rgba8" => BufferMutPtr::Mut8(self.image.as_mut_rgba8().unwrap().as_mut_ptr()),
-            "bgr8" => BufferMutPtr::Mut8(self.image.as_mut_rgb8().unwrap().as_mut_ptr()),
-            "bgra8" => BufferMutPtr::Mut8(self.image.as_mut_rgba8().unwrap().as_mut_ptr()),
-            "mono16" => BufferMutPtr::Mut16(self.image.as_mut_luma16().unwrap().as_mut_ptr()),
-            "rgb16" => BufferMutPtr::Mut16(self.image.as_mut_rgb16().unwrap().as_mut_ptr()),
-            "rgba16" => BufferMutPtr::Mut16(self.image.as_mut_rgba16().unwrap().as_mut_ptr()),
-            _ => panic!("Unsupported encoding"),
-        };
-        
-        let mat;
-        if let BufferMutPtr::Mut8(inner_ptr) =  image_buffer_ptr {
-            unsafe {
-                mat = Mat::new_rows_cols_with_data(
-                    self.image.height() as i32,
-                    self.image.width() as i32,
-                    image_encodings::from_str_to_cvtype(&desired_encoding),
-                    inner_ptr as *mut _,
-                    opencv::core::Mat_AUTO_STEP
-                ).unwrap();
-            }
-    
-            mat   
-        }
-        else if let BufferMutPtr::Mut16(inner_ptr) =  image_buffer_ptr {
-            unsafe {
-                mat = Mat::new_rows_cols_with_data(
-                    self.image.height() as i32,
-                    self.image.width() as i32,
-                    image_encodings::from_str_to_cvtype(&desired_encoding),
-                    inner_ptr as *mut _,
-                    opencv::core::Mat_AUTO_STEP
-                ).unwrap();
-            }
-    
-            mat   
-        }
-        else {
-            panic!("Unsupported encoding");
-        }
-    }
-
-    pub fn as_image(&self) -> &DynamicImage {
-        &self.image
-    }
-
-    pub fn as_mut_image(&mut self) -> &mut DynamicImage {
-        &mut self.image
-    }
-
-    pub fn into_imgmsg(self) -> Image {
-        let color = self.image.color();
-        let (width, height) = self.image.dimensions();
-        let step = width * color.bytes_per_pixel() as u32;
-
-        let encoding = image_encodings::from_color_to_str(&color.into());
-        let data = self.image.as_bytes().into();
-
         Image {
             header: self.header,
-            height: height as u32,
-            width: width as u32,
-            encoding,
-            is_bigendian: 0,
-            step: step as u32,
-            data,
+            height: self.height as u32,
+            width: self.width as u32,
+            encoding: self.encoding,
+            is_bigendian: is_bigendian,
+            step: step,
+            data: if is_bigendian == 0 {
+                self.data
+            } else {
+                image_encoding_ops::from_le_to_be(&self.data)
+            },
         }
+    }
+
+    pub fn to_cvimage(&mut self, desired_encoding: &str) -> Result<CvImage, Box<dyn error::Error>> {
+        let src_mat = self.as_cvmat()?;
+        let mut dst_mat = Mat::default();
+        let src_enc = image_encodings::from_encstr_to_cvenc(&self.encoding)?;
+        let dst_enc = image_encodings::from_encstr_to_cvenc(desired_encoding)?;
+
+        opencv::imgproc::cvt_color(&src_mat, &mut dst_mat, image_encodings::get_conversion_code(src_enc, dst_enc)?, 0)?;
+
+        Ok(CvImage::from_cvmat(dst_mat, desired_encoding))
+    }
+
+    pub fn as_cvmat(&mut self) -> Result<Mat, Box<dyn error::Error>> {
+        let cvtype = image_encodings::from_encstr_to_cvtype(&self.encoding)?;
+        let mat;
+        unsafe {
+            mat = Mat::new_rows_cols_with_data(
+                self.height as i32,
+                self.width as i32,
+                cvtype,
+                self.data.as_mut_ptr() as *mut _,
+                opencv::core::Mat_AUTO_STEP
+            )?;
+        }
+
+        Ok(mat)
+    }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.data
+    }
+
+    pub fn as_mut_bytes(&mut self) -> &mut [u8] {
+        &mut self.data
+    }
+
+    pub fn header(&self) -> &Header {
+        &self.header
+    }
+
+    pub fn header_mut(&mut self) -> &mut Header {
+        &mut self.header
+    }
+
+    pub fn encoding(&self) -> &String {
+        &self.encoding
     }
 }
