@@ -11,7 +11,7 @@ Rust implemenation of cv_bridge that converts between ROS image messages and Ope
 Add the following to your Cargo.toml file under dependencies:
 ```toml
 [dependencies]
-cv-bridge = "0.2.0"
+cv-bridge = "0.3.0"
 ```
 or you can use cargo to add the dependency:
 ```bash
