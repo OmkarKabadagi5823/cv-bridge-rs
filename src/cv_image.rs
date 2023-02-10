@@ -5,10 +5,7 @@
 use opencv::prelude::*;
 use rosrust_msg::{
     std_msgs::Header,
-    sensor_msgs::{
-        Image,
-        CompressedImage
-    },
+    sensor_msgs::Image,
 };
 use std::error::Error;
 
