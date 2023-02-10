@@ -1,19 +1,50 @@
+//! This module contains the image encodings used by OpenCV
+//! 
+//! ## Supported encodings
+//! * `mono8` - 8-bit single channel image
+//! * `rgb8` - 8-bit 3 channel image
+//! * `rgba8` - 8-bit 4 channel image
+//! * `bgr8` - 8-bit 3 channel image
+//! * `bgra8` - 8-bit 4 channel image
+//! * `mono16` - 16-bit single channel image
+//! * `rgb16` - 16-bit 3 channel image
+//! * `rgba16` - 16-bit 4 channel image
+//! * `bgr16` - 16-bit 3 channel image
+//! * `bgra16` - 16-bit 4 channel image
+//! * `bayer_rggb8` - 8-bit Bayer image
+//! * `bayer_bggr8` - 8-bit Bayer image
+//! * `bayer_gbrg8` - 8-bit Bayer image
+//! * `bayer_grbg8` - 8-bit Bayer image
+//! * `bayer_rggb16` - 16-bit Bayer image
+//! * `bayer_bggr16` - 16-bit Bayer image
+//! * `bayer_gbrg16` - 16-bit Bayer image
+//! * `bayer_grbg16` - 16-bit Bayer image
+//! * `yuv422` - 8-bit 2 channel image
+//! * `yuv422_yuy2` - 8-bit 2 channel image
+
 #[derive(Debug)]
 pub enum Encoding {
-    GRAY,
-    RGB,
-    BGR,
-    RGBA,
-    BGRA,
-    YUV422,
-    YUV422_YUY2,
-    BAYER_RGGB, 
-    BAYER_BGGR,
-    BAYER_GBRG,
-    BAYER_GRBG,
-    INVALID
+    Gray,
+    Rgb,
+    Bgr,
+    Rgba,
+    Bgra,
+    Yuv422,
+    Yuv422yuy2,
+    BayerRGGB, 
+    BayerBGGR,
+    BayerGBRG,
+    BayerGRBG,
+    Invalid
 }
 
+/// Returns the number of channels for the given encoding
+/// 
+/// ## Arguments
+/// * `encoding` - The encoding to get the number of channels for (e.g. "rgb8")
+/// 
+/// ## Returns
+/// The number of channels for the given encoding
 pub fn get_num_channels(encoding: &str) -> usize {
     match encoding {
         "mono8" => 1,
@@ -40,6 +71,14 @@ pub fn get_num_channels(encoding: &str) -> usize {
     }
 }
 
+/// Returns the bit depth for the given encoding
+/// 
+/// ## Arguments
+/// * `encoding` - The encoding to get the bit depth for (e.g. "rgb8")
+///                Note: The bit depth is the number of bits per channel
+/// 
+/// ## Returns
+/// The bit depth for the given encoding
 pub fn get_bit_depth(encoding: &str) -> u8 {
     match encoding {
         "mono8" => 8,
@@ -66,18 +105,34 @@ pub fn get_bit_depth(encoding: &str) -> u8 {
     }
 }
 
-pub fn from_depthstr_to_int(depth: &str) -> Result<i32, String> {
-    match depth {
-        "8U" => Ok(0),
-        "8S" => Ok(1),
-        "16U" => Ok(2),
-        "16S" => Ok(3),
-        "32S" => Ok(4),
-        "32F" => Ok(5),
-        _ => Ok(6)
+/// Returns the scaling factor when converting between encodings with
+/// different bit depths
+/// 
+/// ## Arguments
+/// * `src_encoding` - The source encoding
+/// * `dst_encoding` - The destination encoding
+/// 
+/// ## Returns
+/// The scaling factor when converting between encodings with different bit depths
+pub fn get_scaling_factor(src_encoding: &str, dst_encoding: &str) -> f64 {
+    let src_depth = get_bit_depth(src_encoding) as i32;
+    let dst_depth = get_bit_depth(dst_encoding) as i32;
+
+    if src_depth == 0 || dst_depth == 0 {
+        return 0.0;
     }
+
+    f64::powi(2.0, dst_depth - src_depth) as f64
 }
 
+/// Returns the OpenCV type for the given encoding
+/// 
+/// ## Arguments
+/// * `encoding` - The encoding to get the OpenCV type for (e.g. "rgb8")
+/// 
+/// ## Returns
+/// The OpenCV type for the given encoding or an error if the encoding is invalid
+/// (eg. opencv::core::CV_8UC3)
 pub fn from_encstr_to_cvtype(encoding: &str) -> Result<i32, String> {
     match encoding {
         "mono8" => Ok(opencv::core::CV_8UC1),
@@ -104,121 +159,142 @@ pub fn from_encstr_to_cvtype(encoding: &str) -> Result<i32, String> {
     }
 }
 
+/// Returns the OpenCV encoding for the given encoding
+/// 
+/// ## Arguments
+/// * `encoding` - The encoding to get the OpenCV encoding for (e.g. "rgb8")
+/// 
+/// ## Returns
+/// The OpenCV encoding for the given encoding or an error if the encoding is invalid
 pub fn from_encstr_to_cvenc(encoding: &str) -> Result<Encoding, String> {
     match encoding {
-        "mono8" => Ok(Encoding::GRAY),
-        "rgb8" => Ok(Encoding::RGB),
-        "rgba8" => Ok(Encoding::RGBA),
-        "bgr8" => Ok(Encoding::BGR),
-        "bgra8" => Ok(Encoding::BGRA),
-        "mono16" => Ok(Encoding::GRAY),
-        "rgb16" => Ok(Encoding::RGB),
-        "rgba16" => Ok(Encoding::RGBA),
-        "bgr16" => Ok(Encoding::BGR),
-        "bgra16" => Ok(Encoding::BGRA),
-        "bayer_rggb8" => Ok(Encoding::BAYER_RGGB),
-        "bayer_bggr8" => Ok(Encoding::BAYER_BGGR),
-        "bayer_gbrg8" => Ok(Encoding::BAYER_GBRG),
-        "bayer_grbg8" => Ok(Encoding::BAYER_GRBG),
-        "bayer_rggb16" => Ok(Encoding::BAYER_RGGB),
-        "bayer_bggr16" => Ok(Encoding::BAYER_BGGR),
-        "bayer_gbrg16" => Ok(Encoding::BAYER_GBRG),
-        "bayer_grbg16" => Ok(Encoding::BAYER_GRBG),
-        "yuv422" => Ok(Encoding::YUV422),
-        "yuv422_yuy2" => Ok(Encoding::YUV422_YUY2),
+        "mono8" => Ok(Encoding::Gray),
+        "rgb8" => Ok(Encoding::Rgb),
+        "rgba8" => Ok(Encoding::Rgba),
+        "bgr8" => Ok(Encoding::Bgr),
+        "bgra8" => Ok(Encoding::Bgra),
+        "mono16" => Ok(Encoding::Gray),
+        "rgb16" => Ok(Encoding::Rgb),
+        "rgba16" => Ok(Encoding::Rgba),
+        "bgr16" => Ok(Encoding::Bgr),
+        "bgra16" => Ok(Encoding::Bgra),
+        "bayer_rggb8" => Ok(Encoding::BayerRGGB),
+        "bayer_bggr8" => Ok(Encoding::BayerBGGR),
+        "bayer_gbrg8" => Ok(Encoding::BayerGBRG),
+        "bayer_grbg8" => Ok(Encoding::BayerGRBG),
+        "bayer_rggb16" => Ok(Encoding::BayerRGGB),
+        "bayer_bggr16" => Ok(Encoding::BayerBGGR),
+        "bayer_gbrg16" => Ok(Encoding::BayerGBRG),
+        "bayer_grbg16" => Ok(Encoding::BayerGRBG),
+        "yuv422" => Ok(Encoding::Yuv422),
+        "yuv422_yuy2" => Ok(Encoding::Yuv422yuy2),
         _ => Err(format!("Unsupported encoding type: {}", encoding))
     }
 }
 
+/// Returns the encoding for the given OpenCV encoding and bit depth
+/// 
+/// ## Arguments
+/// * `cvenc` - The OpenCV encoding to get the encoding for
+/// * `cvdepth` - The OpenCV bit depth to get the encoding for
+///          (0 = unsigned 8-bit, 1 = signed 8-bit, 2 = unsigned 16-bit, 3 = signed 16-bit)
 pub fn from_cvenc_to_encstr(cvenc: Encoding, cvdepth: i32) -> Result<String, String> {
     match (cvenc, cvdepth) {
-        (Encoding::GRAY, 0) => Ok("mono8".to_string()),
-        (Encoding::GRAY, 1) => Ok("mono8".to_string()),
-        (Encoding::GRAY, 2) => Ok("mono16".to_string()),
-        (Encoding::GRAY, 3) => Ok("mono16".to_string()),
-        (Encoding::RGB, 0) => Ok("rgb8".to_string()),
-        (Encoding::RGB, 1) => Ok("rgb8".to_string()),
-        (Encoding::RGB, 2) => Ok("rgb16".to_string()),
-        (Encoding::RGB, 3) => Ok("rgb16".to_string()),
-        (Encoding::RGBA, 0) => Ok("rgba8".to_string()),
-        (Encoding::RGBA, 1) => Ok("rgba8".to_string()),
-        (Encoding::RGBA, 2) => Ok("rgba16".to_string()),
-        (Encoding::RGBA, 3) => Ok("rgba16".to_string()),
-        (Encoding::BGR, 0) => Ok("bgr8".to_string()),
-        (Encoding::BGR, 1) => Ok("bgr8".to_string()),
-        (Encoding::BGR, 2) => Ok("bgr16".to_string()),
-        (Encoding::BGR, 3) => Ok("bgr16".to_string()),
-        (Encoding::BGRA, 0) => Ok("bgra8".to_string()),
-        (Encoding::BGRA, 1) => Ok("bgra8".to_string()),
-        (Encoding::BGRA, 2) => Ok("bgra16".to_string()),
-        (Encoding::BGRA, 3) => Ok("bgra16".to_string()),
-        (Encoding::BAYER_RGGB, 0) => Ok("bayer_rggb8".to_string()),
-        (Encoding::BAYER_RGGB, 1) => Ok("bayer_rggb8".to_string()),
-        (Encoding::BAYER_RGGB, 2) => Ok("bayer_rggb16".to_string()),
-        (Encoding::BAYER_RGGB, 3) => Ok("bayer_rggb16".to_string()),
-        (Encoding::BAYER_BGGR, 0) => Ok("bayer_bggr8".to_string()),
-        (Encoding::BAYER_BGGR, 1) => Ok("bayer_bggr8".to_string()),
-        (Encoding::BAYER_BGGR, 2) => Ok("bayer_bggr16".to_string()),
-        (Encoding::BAYER_BGGR, 3) => Ok("bayer_bggr16".to_string()),
-        (Encoding::BAYER_GBRG, 0) => Ok("bayer_gbrg8".to_string()),
-        (Encoding::BAYER_GBRG, 1) => Ok("bayer_gbrg8".to_string()),
-        (Encoding::BAYER_GBRG, 2) => Ok("bayer_gbrg16".to_string()),
-        (Encoding::BAYER_GBRG, 3) => Ok("bayer_gbrg16".to_string()),
-        (Encoding::BAYER_GRBG, 0) => Ok("bayer_grbg8".to_string()),
-        (Encoding::BAYER_GRBG, 1) => Ok("bayer_grbg8".to_string()),
-        (Encoding::BAYER_GRBG, 2) => Ok("bayer_grbg16".to_string()),
-        (Encoding::BAYER_GRBG, 3) => Ok("bayer_grbg16".to_string()),
-        (Encoding::YUV422, 0) => Ok("yuv422".to_string()),
-        (Encoding::YUV422_YUY2, 0) => Ok("yuv422_yuy2".to_string()),
+        (Encoding::Gray, 0) => Ok("mono8".to_string()),
+        (Encoding::Gray, 1) => Ok("mono8".to_string()),
+        (Encoding::Gray, 2) => Ok("mono16".to_string()),
+        (Encoding::Gray, 3) => Ok("mono16".to_string()),
+        (Encoding::Rgb, 0) => Ok("rgb8".to_string()),
+        (Encoding::Rgb, 1) => Ok("rgb8".to_string()),
+        (Encoding::Rgb, 2) => Ok("rgb16".to_string()),
+        (Encoding::Rgb, 3) => Ok("rgb16".to_string()),
+        (Encoding::Rgba, 0) => Ok("rgba8".to_string()),
+        (Encoding::Rgba, 1) => Ok("rgba8".to_string()),
+        (Encoding::Rgba, 2) => Ok("rgba16".to_string()),
+        (Encoding::Rgba, 3) => Ok("rgba16".to_string()),
+        (Encoding::Bgr, 0) => Ok("bgr8".to_string()),
+        (Encoding::Bgr, 1) => Ok("bgr8".to_string()),
+        (Encoding::Bgr, 2) => Ok("bgr16".to_string()),
+        (Encoding::Bgr, 3) => Ok("bgr16".to_string()),
+        (Encoding::Bgra, 0) => Ok("bgra8".to_string()),
+        (Encoding::Bgra, 1) => Ok("bgra8".to_string()),
+        (Encoding::Bgra, 2) => Ok("bgra16".to_string()),
+        (Encoding::Bgra, 3) => Ok("bgra16".to_string()),
+        (Encoding::BayerRGGB, 0) => Ok("bayer_rggb8".to_string()),
+        (Encoding::BayerRGGB, 1) => Ok("bayer_rggb8".to_string()),
+        (Encoding::BayerRGGB, 2) => Ok("bayer_rggb16".to_string()),
+        (Encoding::BayerRGGB, 3) => Ok("bayer_rggb16".to_string()),
+        (Encoding::BayerBGGR, 0) => Ok("bayer_bggr8".to_string()),
+        (Encoding::BayerBGGR, 1) => Ok("bayer_bggr8".to_string()),
+        (Encoding::BayerBGGR, 2) => Ok("bayer_bggr16".to_string()),
+        (Encoding::BayerBGGR, 3) => Ok("bayer_bggr16".to_string()),
+        (Encoding::BayerGBRG, 0) => Ok("bayer_gbrg8".to_string()),
+        (Encoding::BayerGBRG, 1) => Ok("bayer_gbrg8".to_string()),
+        (Encoding::BayerGBRG, 2) => Ok("bayer_gbrg16".to_string()),
+        (Encoding::BayerGBRG, 3) => Ok("bayer_gbrg16".to_string()),
+        (Encoding::BayerGRBG, 0) => Ok("bayer_grbg8".to_string()),
+        (Encoding::BayerGRBG, 1) => Ok("bayer_grbg8".to_string()),
+        (Encoding::BayerGRBG, 2) => Ok("bayer_grbg16".to_string()),
+        (Encoding::BayerGRBG, 3) => Ok("bayer_grbg16".to_string()),
+        (Encoding::Yuv422, 0) => Ok("yuv422".to_string()),
+        (Encoding::Yuv422yuy2, 0) => Ok("yuv422_yuy2".to_string()),
         _ => Err(format!("Unsupported encoding type"))
 
     }
 }
 
+/// Returns the conversion code for going from one color space to another
+/// 
+/// ## Arguments
+/// * `src_encoding` - The source encoding
+/// * `dst_encoding` - The destination encoding
+/// 
+/// ## Returns
+/// * `Ok(i32)` - The conversion code (eg. opencv::imgproc::COLOR_RGB2GRAY)
 pub fn get_conversion_code(src_encoding: Encoding, dst_encoding: Encoding) -> Result<i32, String>{
     match (&src_encoding, &dst_encoding) {
-        (Encoding::GRAY, Encoding::RGB) => Ok(opencv::imgproc::COLOR_GRAY2RGB),
-        (Encoding::GRAY, Encoding::BGR) => Ok(opencv::imgproc::COLOR_GRAY2BGR),
-        (Encoding::GRAY, Encoding::RGBA) => Ok(opencv::imgproc::COLOR_GRAY2RGBA),
-        (Encoding::GRAY, Encoding::BGRA) => Ok(opencv::imgproc::COLOR_GRAY2BGRA),
-        (Encoding::RGB, Encoding::GRAY) => Ok(opencv::imgproc::COLOR_RGB2GRAY),
-        (Encoding::RGB, Encoding::BGR) => Ok(opencv::imgproc::COLOR_RGB2BGR),
-        (Encoding::RGB, Encoding::RGBA) => Ok(opencv::imgproc::COLOR_RGB2RGBA),
-        (Encoding::RGB, Encoding::BGRA) => Ok(opencv::imgproc::COLOR_RGB2BGRA),
-        (Encoding::BGR, Encoding::GRAY) => Ok(opencv::imgproc::COLOR_BGR2GRAY),
-        (Encoding::BGR, Encoding::RGB) => Ok(opencv::imgproc::COLOR_BGR2RGB),
-        (Encoding::BGR, Encoding::RGBA) => Ok(opencv::imgproc::COLOR_BGR2RGBA),
-        (Encoding::BGR, Encoding::BGRA) => Ok(opencv::imgproc::COLOR_BGR2BGRA),
-        (Encoding::RGBA, Encoding::GRAY) => Ok(opencv::imgproc::COLOR_RGBA2GRAY),
-        (Encoding::RGBA, Encoding::RGB) => Ok(opencv::imgproc::COLOR_RGBA2RGB),
-        (Encoding::RGBA, Encoding::BGR) => Ok(opencv::imgproc::COLOR_RGBA2BGR),
-        (Encoding::RGBA, Encoding::BGRA) => Ok(opencv::imgproc::COLOR_RGBA2BGRA),
-        (Encoding::BGRA, Encoding::GRAY) => Ok(opencv::imgproc::COLOR_BGRA2GRAY),
-        (Encoding::BGRA, Encoding::RGB) => Ok(opencv::imgproc::COLOR_BGRA2RGB),
-        (Encoding::BGRA, Encoding::BGR) => Ok(opencv::imgproc::COLOR_BGRA2BGR),
-        (Encoding::BGRA, Encoding::RGBA) => Ok(opencv::imgproc::COLOR_BGRA2RGBA),
-        (Encoding::BAYER_RGGB, Encoding::GRAY) => Ok(opencv::imgproc::COLOR_BayerBG2GRAY),
-        (Encoding::BAYER_RGGB, Encoding::RGB) => Ok(opencv::imgproc::COLOR_BayerBG2RGB),
-        (Encoding::BAYER_RGGB, Encoding::BGR) => Ok(opencv::imgproc::COLOR_BayerBG2BGR),
-        (Encoding::BAYER_BGGR, Encoding::GRAY) => Ok(opencv::imgproc::COLOR_BayerRG2GRAY),
-        (Encoding::BAYER_BGGR, Encoding::RGB) => Ok(opencv::imgproc::COLOR_BayerRG2RGB),
-        (Encoding::BAYER_BGGR, Encoding::BGR) => Ok(opencv::imgproc::COLOR_BayerRG2BGR),
-        (Encoding::BAYER_GBRG, Encoding::GRAY) => Ok(opencv::imgproc::COLOR_BayerGR2GRAY),
-        (Encoding::BAYER_GBRG, Encoding::RGB) => Ok(opencv::imgproc::COLOR_BayerGR2RGB),
-        (Encoding::BAYER_GBRG, Encoding::BGR) => Ok(opencv::imgproc::COLOR_BayerGR2BGR),
-        (Encoding::BAYER_GRBG, Encoding::GRAY) => Ok(opencv::imgproc::COLOR_BayerGB2GRAY),
-        (Encoding::BAYER_GRBG, Encoding::RGB) => Ok(opencv::imgproc::COLOR_BayerGB2RGB),
-        (Encoding::BAYER_GRBG, Encoding::BGR) => Ok(opencv::imgproc::COLOR_BayerGB2BGR),
-        (Encoding::YUV422, Encoding::GRAY) => Ok(opencv::imgproc::COLOR_YUV2GRAY_UYVY),
-        (Encoding::YUV422, Encoding::RGB) => Ok(opencv::imgproc::COLOR_YUV2RGB_UYVY),
-        (Encoding::YUV422, Encoding::BGR) => Ok(opencv::imgproc::COLOR_YUV2BGRA_UYVY),
-        (Encoding::YUV422, Encoding::RGBA) => Ok(opencv::imgproc::COLOR_YUV2RGBA_UYVY),
-        (Encoding::YUV422, Encoding::BGRA) => Ok(opencv::imgproc::COLOR_YUV2BGR_UYVY),
-        (Encoding::YUV422_YUY2, Encoding::GRAY) => Ok(opencv::imgproc::COLOR_YUV2GRAY_YUY2),
-        (Encoding::YUV422_YUY2, Encoding::RGB) => Ok(opencv::imgproc::COLOR_YUV2RGB_YUY2),
-        (Encoding::YUV422_YUY2, Encoding::BGR) => Ok(opencv::imgproc::COLOR_YUV2BGR_YUY2),
-        (Encoding::YUV422_YUY2, Encoding::RGBA) => Ok(opencv::imgproc::COLOR_YUV2RGBA_YUY2),
-        (Encoding::YUV422_YUY2, Encoding::BGRA) => Ok(opencv::imgproc::COLOR_YUV2BGRA_YUY2),
+        (Encoding::Gray, Encoding::Rgb) => Ok(opencv::imgproc::COLOR_GRAY2RGB),
+        (Encoding::Gray, Encoding::Bgr) => Ok(opencv::imgproc::COLOR_GRAY2BGR),
+        (Encoding::Gray, Encoding::Rgba) => Ok(opencv::imgproc::COLOR_GRAY2RGBA),
+        (Encoding::Gray, Encoding::Bgra) => Ok(opencv::imgproc::COLOR_GRAY2BGRA),
+        (Encoding::Rgb, Encoding::Gray) => Ok(opencv::imgproc::COLOR_RGB2GRAY),
+        (Encoding::Rgb, Encoding::Bgr) => Ok(opencv::imgproc::COLOR_RGB2BGR),
+        (Encoding::Rgb, Encoding::Rgba) => Ok(opencv::imgproc::COLOR_RGB2RGBA),
+        (Encoding::Rgb, Encoding::Bgra) => Ok(opencv::imgproc::COLOR_RGB2BGRA),
+        (Encoding::Bgr, Encoding::Gray) => Ok(opencv::imgproc::COLOR_BGR2GRAY),
+        (Encoding::Bgr, Encoding::Rgb) => Ok(opencv::imgproc::COLOR_BGR2RGB),
+        (Encoding::Bgr, Encoding::Rgba) => Ok(opencv::imgproc::COLOR_BGR2RGBA),
+        (Encoding::Bgr, Encoding::Bgra) => Ok(opencv::imgproc::COLOR_BGR2BGRA),
+        (Encoding::Rgba, Encoding::Gray) => Ok(opencv::imgproc::COLOR_RGBA2GRAY),
+        (Encoding::Rgba, Encoding::Rgb) => Ok(opencv::imgproc::COLOR_RGBA2RGB),
+        (Encoding::Rgba, Encoding::Bgr) => Ok(opencv::imgproc::COLOR_RGBA2BGR),
+        (Encoding::Rgba, Encoding::Bgra) => Ok(opencv::imgproc::COLOR_RGBA2BGRA),
+        (Encoding::Bgra, Encoding::Gray) => Ok(opencv::imgproc::COLOR_BGRA2GRAY),
+        (Encoding::Bgra, Encoding::Rgb) => Ok(opencv::imgproc::COLOR_BGRA2RGB),
+        (Encoding::Bgra, Encoding::Bgr) => Ok(opencv::imgproc::COLOR_BGRA2BGR),
+        (Encoding::Bgra, Encoding::Rgba) => Ok(opencv::imgproc::COLOR_BGRA2RGBA),
+        (Encoding::BayerRGGB, Encoding::Gray) => Ok(opencv::imgproc::COLOR_BayerBG2GRAY),
+        (Encoding::BayerRGGB, Encoding::Rgb) => Ok(opencv::imgproc::COLOR_BayerBG2RGB),
+        (Encoding::BayerRGGB, Encoding::Bgr) => Ok(opencv::imgproc::COLOR_BayerBG2BGR),
+        (Encoding::BayerBGGR, Encoding::Gray) => Ok(opencv::imgproc::COLOR_BayerRG2GRAY),
+        (Encoding::BayerBGGR, Encoding::Rgb) => Ok(opencv::imgproc::COLOR_BayerRG2RGB),
+        (Encoding::BayerBGGR, Encoding::Bgr) => Ok(opencv::imgproc::COLOR_BayerRG2BGR),
+        (Encoding::BayerGBRG, Encoding::Gray) => Ok(opencv::imgproc::COLOR_BayerGR2GRAY),
+        (Encoding::BayerGBRG, Encoding::Rgb) => Ok(opencv::imgproc::COLOR_BayerGR2RGB),
+        (Encoding::BayerGBRG, Encoding::Bgr) => Ok(opencv::imgproc::COLOR_BayerGR2BGR),
+        (Encoding::BayerGRBG, Encoding::Gray) => Ok(opencv::imgproc::COLOR_BayerGB2GRAY),
+        (Encoding::BayerGRBG, Encoding::Rgb) => Ok(opencv::imgproc::COLOR_BayerGB2RGB),
+        (Encoding::BayerGRBG, Encoding::Bgr) => Ok(opencv::imgproc::COLOR_BayerGB2BGR),
+        (Encoding::Yuv422, Encoding::Gray) => Ok(opencv::imgproc::COLOR_YUV2GRAY_UYVY),
+        (Encoding::Yuv422, Encoding::Rgb) => Ok(opencv::imgproc::COLOR_YUV2RGB_UYVY),
+        (Encoding::Yuv422, Encoding::Bgr) => Ok(opencv::imgproc::COLOR_YUV2BGRA_UYVY),
+        (Encoding::Yuv422, Encoding::Rgba) => Ok(opencv::imgproc::COLOR_YUV2RGBA_UYVY),
+        (Encoding::Yuv422, Encoding::Bgra) => Ok(opencv::imgproc::COLOR_YUV2BGR_UYVY),
+        (Encoding::Yuv422yuy2, Encoding::Gray) => Ok(opencv::imgproc::COLOR_YUV2GRAY_YUY2),
+        (Encoding::Yuv422yuy2, Encoding::Rgb) => Ok(opencv::imgproc::COLOR_YUV2RGB_YUY2),
+        (Encoding::Yuv422yuy2, Encoding::Bgr) => Ok(opencv::imgproc::COLOR_YUV2BGR_YUY2),
+        (Encoding::Yuv422yuy2, Encoding::Rgba) => Ok(opencv::imgproc::COLOR_YUV2RGBA_YUY2),
+        (Encoding::Yuv422yuy2, Encoding::Bgra) => Ok(opencv::imgproc::COLOR_YUV2BGRA_YUY2),
         _ => Err(format!("Unsupported conversion from {:?} to {:?}", src_encoding, dst_encoding)),
     }
 }
