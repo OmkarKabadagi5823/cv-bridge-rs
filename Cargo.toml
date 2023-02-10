@@ -13,6 +13,5 @@ repository = "https://github.com/OmkarKabadagi5823/cv-bridge-rs.git"
 
 [dependencies]
 byteorder = "1.4.3"
-ndarray = { version = "0.15.6", features = ["matrixmultiply-threading"] }
 opencv = "0.74.2"
 rosrust_msg = "0.1.6"
