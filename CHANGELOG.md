@@ -1,6 +1,10 @@
 # CHANGELOG.md
 
-## 0.3.0 -> 0.3.2
+## 0.3.3
+Changes:
+  - bump the opencv version to 0.76.4 to possibly fix readonly issue causing doc build failure (check the issue here [opencv-rust #412](https://github.com/twistedfall/opencv-rust/issues/412))
+
+## 0.3.2
 Changes:
   - replace dependency on `rosrust_msg` crate with `rosrust`
   - create build script to generate messages
@@ -10,7 +14,7 @@ Changes:
 Bugfixes:
   - fix the persistent doc build failure
   
-## 0.3.0 -> 0.3.1
+## 0.3.1
 
 Bugfixes:
   - fix failed doc build by manual generation of ros messages

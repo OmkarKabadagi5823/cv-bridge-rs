@@ -1,3 +1,5 @@
+//! Manually generated ros messages
+
 rosrust::rosmsg_include!(
     std_msgs / Header,
     sensor_msgs / CameraInfo,

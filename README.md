@@ -6,12 +6,13 @@
 Rust implemenation of cv_bridge that converts between ROS image messages and OpenCV images
 
 > **Warning**: This package is still under active development. Use at your own risk.  
+
 ## Getting Started
 ### Adding cv_bridge to your project
 Add the following to your Cargo.toml file under dependencies:
 ```toml
 [dependencies]
-cv-bridge = "0.3.2"
+cv-bridge = "0.3.3"
 ```
 or you can use cargo to add the dependency:
 ```bash

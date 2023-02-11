@@ -1,6 +1,6 @@
 [package]
 name = "cv-bridge"
-version = "0.3.2"
+version = "0.3.3"
 edition = "2021"
 authors = ["Omkar Kabadagi <kabadagiomkar@gmail.com>"]
 description = "Rust implemenation of cv_bridge that converts between ROS image messages and OpenCV images"
@@ -13,5 +13,5 @@ repository = "https://github.com/OmkarKabadagi5823/cv-bridge-rs.git"
 
 [dependencies]
 byteorder = "1.4.3"
-opencv = "0.74.2"
+opencv = "0.76.4"
 rosrust = "0.9.10"
