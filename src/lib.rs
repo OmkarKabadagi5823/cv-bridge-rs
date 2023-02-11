@@ -1,3 +1,5 @@
+#![doc(html_favicon_url = "https://omkarkabadagi5823.github.io/cv_bridge/logo.ico")]
+#![doc(html_logo_url = "https://omkarkabadagi5823.github.io/cv_bridge/logo.png")]
 //! `cv-bridge` is a crate for converting between OpenCV and ROS Image.
 //! This works in conjunction to the [`ros_rust`](https://github.com/adnanademovic/rosrust) crate.
 //! 
@@ -10,35 +12,38 @@
 //! 
 //! ## Convert from ROS Image to OpenCV Mat
 //! ```
-//! use opencv::{
-//!     prelude::*,
-//!     highgui,
+//! use opencv::highgui;
+//! use cv_bridge::{
+//!     CvImage,
+//!     msgs::sensor_msgs::Image,
 //! };
-//! use rosrust_msg::{
-//!     sensor_msgs::Image,
-//!     std_msgs::Header
-//! };
-//! use cv_bridge::CvImage;
-//! 
+
 //! fn main() {
-//!     rosrust::init("image_listener");
+//!     // Initialize ros node
+//!     rosrust::init("image_viewer");
 //! 
+//!     // Create image subscriber
 //!     let _subscriber_raii = rosrust::subscribe(
-//!         "/camera/image_raw", 
-//!         1, 
-//!         move |ros_image: Image| {
-//!             let mut cv_image = CvImage::from_imgmsg(ros_image).unwrap();
-//!             let mat = cv_image.as_cvmat().unwrap();
+//!         "/camera/image_raw",
+//!         5,
+//!         move |image: Image| {
+//!             // Convert ros Image to opencv Mat
+//!             let mut cv_image = CvImage::from_imgmsg(image).expect("failed to construct CvImage from ros Image"); 
+//!             let mat = cv_image.as_cvmat().expect("failed to convert CvImage to Mat");
 //! 
-//!             highgui::imshow("image", &mat).unwrap();
+//!             // Display image
+//!             let window = "view";
+//!             highgui::named_window(window, highgui::WINDOW_AUTOSIZE).unwrap();
+//!             highgui::imshow(window, &mat).unwrap();
 //!             highgui::wait_key(1).unwrap();
 //!         }
-//!     ).unwrap();
-//! 
+//!     );
+
 //!     rosrust::spin();
 //! }
 //! ```
 
+pub mod msgs;
 pub mod cv_image;
 pub mod utils;
 

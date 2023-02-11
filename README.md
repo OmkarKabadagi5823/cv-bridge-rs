@@ -11,7 +11,7 @@ Rust implemenation of cv_bridge that converts between ROS image messages and Ope
 Add the following to your Cargo.toml file under dependencies:
 ```toml
 [dependencies]
-cv-bridge = "0.3.1"
+cv-bridge = "0.3.2"
 ```
 or you can use cargo to add the dependency:
 ```bash
@@ -20,36 +20,32 @@ cargo add cv_bridge
 
 ### Converting between ROS image messages and OpenCV images
 ``` rust
-use opencv::{
-    prelude::*,
-    highgui,
+use opencv::highgui;
+use cv_bridge::{
+    CvImage,
+    msgs::sensor_msgs::Image,
 };
-use rosrust_msg::{
-    sensor_msgs::Image,
-    std_msgs::Header
-};
-use cv_bridge::CvImage;
 
 fn main() {
-    // Initialize ROS node
-    rosrust::init("image_listener");
+    // Initialize ros node
+    rosrust::init("image_viewer");
 
-    // Create a subscription to the /camera/image_raw topic
+    // Create image subscriber
     let _subscriber_raii = rosrust::subscribe(
-        "/camera/image_raw", 
-        1, 
-        move |ros_image: Image| {
-            // Create a CvImage from the ROS image message
-            let mut cv_image = CvImage::from_imgmsg(ros_image).unwrap();
+        "/camera/image_raw",
+        5,
+        move |image: Image| {
+            // Convert ros Image to opencv Mat
+            let mut cv_image = CvImage::from_imgmsg(image).expect("failed to construct CvImage from ros Image"); 
+            let mat = cv_image.as_cvmat().expect("failed to convert CvImage to Mat");
 
-            // Create opencv::core::Mat from the CvImage
-            let mat = cv_image.as_cvmat().unwrap();
-
-            // Display the image
-            highgui::imshow("image", &mat).unwrap();
+            // Display image
+            let window = "view";
+            highgui::named_window(window, highgui::WINDOW_AUTOSIZE).unwrap();
+            highgui::imshow(window, &mat).unwrap();
             highgui::wait_key(1).unwrap();
         }
-    ).unwrap();
+    );
 
     rosrust::spin();
 }

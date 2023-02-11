@@ -3,12 +3,12 @@
 //! a bridge between the `sensor_msgs::Image` message and `cv::Mat`
 
 use opencv::prelude::*;
-use rosrust_msg::{
+use std::error::Error;
+
+use crate::msgs::{
     std_msgs::Header,
     sensor_msgs::Image,
 };
-use std::error::Error;
-
 use crate::utils::{
     image_encodings,
     image_byteorder_ops,

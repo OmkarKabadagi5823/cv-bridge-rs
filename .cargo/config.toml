@@ -1,2 +1,0 @@
-[env]
-ROSRUST_MSG_PATH = {value  = "ros_message_files:", relative = true }
